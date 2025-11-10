@@ -1,8 +1,8 @@
 from app import app, socketio
 import os
 
-# For Gunicorn
-application = app
+# For Gunicorn - expose socketio application
+application = socketio
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5005))
