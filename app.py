@@ -8,7 +8,7 @@ import threading
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'stock_monitor_secret_key'
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # 全域變數
 monitoring_data = []
