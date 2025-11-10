@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票監控系統</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* 左側面板 */
+        .sidebar {
+            width: 280px;
+            background: #2d2d2d;
+            padding: 15px;
+            border-right: 2px solid #404040;
+            overflow-y: auto;
+        }
+
+        .sidebar h1 {
+            color: #4CAF50;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #b0b0b0;
+            font-size: 13px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 10px;
+            background: #1a1a1a;
+            border: 1px solid #404040;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 13px;
+            resize: vertical;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            background: #1a1a1a;
+            border: 1px solid #404040;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 13px;
+        }
+
+        .price-range {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .btn-start {
+            background: #4CAF50;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .btn-start:hover {
+            background: #45a049;
+        }
+
+        .btn-stop {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-stop:hover {
+            background: #da190b;
+        }
+
+        .btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            border-left: 3px solid #4CAF50;
+            font-size: 13px;
+        }
+
+        .help-text {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #888;
+        }
+
+        /* 主要內容區 */
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #404040;
+        }
+
+        .header h2 {
+            color: #4CAF50;
+        }
+
+        .last-update {
+            color: #888;
+            font-size: 14px;
+        }
+
+        /* 表格樣式 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #2d2d2d;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        thead {
+            background: #404040;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            color: #4CAF50;
+            border-bottom: 2px solid #505050;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #404040;
+        }
+
+        tbody tr:hover {
+            background: #353535;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+            font-size: 16px;
+        }
+
+        .positive {
+            color: #f44336;
+        }
+
+        .negative {
+            color: #4CAF50;
+        }
+
+        .ticker {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .vol-ratio {
+            font-weight: bold;
+            color: #2196F3;
+        }
+
+        /* 量相關欄位背景 */
+        .vol-column {
+            background: rgba(33, 150, 243, 0.25);
+            white-space: nowrap;
+            max-width: 200px;
+        }
+
+        /* 價相關欄位背景 */
+        .price-column {
+            background: rgba(255, 152, 0, 0.25);
+            white-space: nowrap;
+            max-width: 200px;
+        }
+
+        /* 0% 顯示白色 */
+        .zero-value {
+            color: #e0e0e0 !important;
+        }
+
+        /* 新增資料動畫 */
+        @keyframes highlight {
+            0% { background: #4CAF50; }
+            100% { background: transparent; }
+        }
+
+        tr.new-row {
+            animation: highlight 1s ease-out;
+        }
+
+        /* 手機版響應式設計 */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 2px solid #404040;
+                max-height: 50vh;
+            }
+
+            .sidebar h1 {
+                font-size: 18px;
+                margin-bottom: 10px;
+            }
+
+            textarea {
+                min-height: 80px;
+                font-size: 12px;
+            }
+
+            .main-content {
+                padding: 10px;
+                overflow-x: auto;
+            }
+
+            table {
+                font-size: 10px;
+            }
+
+            th, td {
+                padding: 6px 4px;
+            }
+
+            .vol-column, .price-column {
+                font-size: 10px;
+                max-width: 140px;
+            }
+
+            .ticker, .vol-ratio {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 左側控制面板 -->
+        <div class="sidebar">
+            <h1>📊 股票監控系統</h1>
+
+            <div class="input-group">
+                <label>股票代碼 (每行一個)</label>
+                <textarea id="tickerInput" placeholder="例如:&#10;2330&#10;2454&#10;2317">2408
+2337
+3260</textarea>
+                <div class="help-text">* 每行輸入一個股票代碼</div>
+            </div>
+
+            <div class="input-group">
+                <label>股價範圍</label>
+                <div class="price-range">
+                    <div>
+                        <label style="font-size: 12px;">最低價</label>
+                        <input type="number" id="minPrice" value="0" min="0">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px;">最高價</label>
+                        <input type="number" id="maxPrice" value="250" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-start" id="startBtn" onclick="startMonitoring()">開始監控</button>
+            <button class="btn btn-stop" id="stopBtn" onclick="stopMonitoring()" disabled>停止監控</button>
+
+            <div class="status" id="status">
+                等待啟動...
+            </div>
+        </div>
+
+        <!-- 主要內容區 -->
+        <div class="main-content">
+            <div class="header">
+                <h2>即時監控數據</h2>
+                <div class="last-update" id="lastUpdate">尚未更新</div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>代碼</th>
+                        <th>名稱</th>
+                        <th>價格</th>
+                        <th>漲幅%</th>
+                        <th>量/5MA</th>
+                        <th class="vol-column">量動能30"/1'/2'</th>
+                        <th class="price-column">價動能30"/1'/2'</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTable">
+                    <tr>
+                        <td colspan="11" class="no-data">請輸入股票代碼並開始監控</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let isMonitoring = false;
+
+        // 頁面載入時自動停止監控
+        window.addEventListener('load', async function() {
+            try {
+                // 頁面載入時自動呼叫停止 API
+                await fetch('/api/stop', { method: 'POST' });
+
+                // 重置按鈕狀態
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('status').textContent = '等待啟動...';
+            } catch (error) {
+                console.error('初始化失敗:', error);
+                document.getElementById('status').textContent = '無法連接伺服器';
+            }
+        });
+
+        // 監聽 WebSocket 更新
+        socket.on('update', function(data) {
+            updateTable(data.data);
+            document.getElementById('lastUpdate').textContent = '最後更新: ' + data.time;
+        });
+
+        socket.on('status', function(data) {
+            document.getElementById('status').textContent = data.message;
+        });
+
+        // 開始監��
+        async function startMonitoring() {
+            const tickerText = document.getElementById('tickerInput').value.trim();
+            const minPrice = parseFloat(document.getElementById('minPrice').value) || 0;
+            const maxPrice = parseFloat(document.getElementById('maxPrice').value) || 999999;
+
+            if (!tickerText) {
+                alert('請輸入至少一個股票代碼');
+                return;
+            }
+
+            const tickers = tickerText.split('\n')
+                .map(t => t.trim())
+                .filter(t => t.length > 0);
+
+            document.getElementById('status').textContent = '正在啟動監控...';
+            document.getElementById('startBtn').disabled = true;
+
+            try {
+                const response = await fetch('/api/start', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        tickers: tickers,
+                        min_price: minPrice,
+                        max_price: maxPrice
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    isMonitoring = true;
+                    document.getElementById('stopBtn').disabled = false;
+                    document.getElementById('status').textContent = `監控中 (${result.tickers_count} 支股票)`;
+                } else {
+                    alert(result.message);
+                    document.getElementById('startBtn').disabled = false;
+                }
+            } catch (error) {
+                alert('啟動失敗: ' + error);
+                document.getElementById('startBtn').disabled = false;
+            }
+        }
+
+        // 停止監控
+        async function stopMonitoring() {
+            try {
+                const response = await fetch('/api/stop', {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    isMonitoring = false;
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('stopBtn').disabled = true;
+                    document.getElementById('status').textContent = result.message;
+                }
+            } catch (error) {
+                alert('停止失敗: ' + error);
+            }
+        }
+
+        // 更新表格
+        function updateTable(data) {
+            const tbody = document.getElementById('dataTable');
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="no-data">目前沒有符合條件的股票</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => {
+                // 格式化量數據
+                const volClass30 = item.vol_diff_30sec == 0 ? 'zero-value' : (item.vol_diff_30sec >= 0 ? 'positive' : 'negative');
+                const volClass1 = item.vol_diff_1min == 0 ? 'zero-value' : (item.vol_diff_1min >= 0 ? 'positive' : 'negative');
+                const volClass2 = item.vol_diff_2min == 0 ? 'zero-value' : (item.vol_diff_2min >= 0 ? 'positive' : 'negative');
+
+                const vol30 = `<span class="${volClass30}">${item.vol_diff_30sec >= 0 ? '+' : ''}${item.vol_diff_30sec}%</span>`;
+                const vol1 = `<span class="${volClass1}">${item.vol_diff_1min >= 0 ? '+' : ''}${item.vol_diff_1min}%</span>`;
+                const vol2 = `<span class="${volClass2}">${item.vol_diff_2min >= 0 ? '+' : ''}${item.vol_diff_2min}%</span>`;
+
+                // 格式化價數據
+                const priceClass30 = item.price_diff_30sec == 0 ? 'zero-value' : (item.price_diff_30sec >= 0 ? 'positive' : 'negative');
+                const priceClass1 = item.price_diff_1min == 0 ? 'zero-value' : (item.price_diff_1min >= 0 ? 'positive' : 'negative');
+                const priceClass2 = item.price_diff_2min == 0 ? 'zero-value' : (item.price_diff_2min >= 0 ? 'positive' : 'negative');
+
+                const price30 = `<span class="${priceClass30}">${item.price_diff_30sec >= 0 ? '+' : ''}${item.price_diff_30sec}%</span>`;
+                const price1 = `<span class="${priceClass1}">${item.price_diff_1min >= 0 ? '+' : ''}${item.price_diff_1min}%</span>`;
+                const price2 = `<span class="${priceClass2}">${item.price_diff_2min >= 0 ? '+' : ''}${item.price_diff_2min}%</span>`;
+
+                return `
+                    <tr class="new-row">
+                        <td class="ticker">${item.ticker}</td>
+                        <td>${item.name}</td>
+                        <td>${item.price}</td>
+                        <td class="${item.pct_change >= 0 ? 'positive' : 'negative'}">
+                            ${item.pct_change >= 0 ? '+' : ''}${item.pct_change}%
+                        </td>
+                        <td class="vol-ratio">${item.vol_ratio}%</td>
+                        <td>${vol30}<span class="zero-value"> / </span>${vol1}<span class="zero-value"> / </span>${vol2}</td>
+                        <td>${price30}<span class="zero-value"> / </span>${price1}<span class="zero-value"> / </span>${price2}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
