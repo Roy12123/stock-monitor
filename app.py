@@ -1,19 +1,21 @@
-from flask import Flask, render_template, jsonify, request
-from flask_socketio import SocketIO
+from flask import Flask, render_template, jsonify, request, session
+from flask_socketio import SocketIO, emit, join_room, leave_room
 import requests
 import pandas as pd
 import time
 from datetime import datetime, timedelta
 import threading
+import uuid
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'stock_monitor_secret_key'
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
-# 全域變數
-monitoring_data = []
-is_monitoring = False
-monitor_thread = None
+# 改用字典存儲每個會話的監控資料
+# session_id -> {data, is_monitoring, thread, tickers, etc.}
+sessions = {}
+sessions_lock = threading.Lock()
+
 token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJkYXRlIjoiMjAyNS0wNi0yOCAxMDowNzozOSIsInVzZXJfaWQiOiJyb3kxMjEyMyIsImlwIjoiMTA2LjEwNy4xODQuMjAwIn0.SWnXjx27wbWjZ8prDpKcv7wDq2QXocNd3h6R43i0f0U"
 
 def get_5day_avg_volume(tickers, token):
@@ -62,10 +64,8 @@ def get_company_info(token):
     temp_data.columns = ['公司產業', '股票代碼', '公司名稱']
     return temp_data
 
-def vol_detect_background(tickers, temp_data, volume_5ma_dict, min_price=0, max_price=999999):
-    """背景執行的監控函式"""
-    global monitoring_data, is_monitoring
-
+def vol_detect_background(session_id, tickers, temp_data, volume_5ma_dict, min_price=0, max_price=999999):
+    """背景執行的監控函式 - 每個會話獨立"""
     headers = {"Authorization": f"Bearer {token}"}
     url = "https://api.finmindtrade.com/api/v4/taiwan_stock_tick_snapshot"
 
@@ -75,7 +75,13 @@ def vol_detect_background(tickers, temp_data, volume_5ma_dict, min_price=0, max_
     price_history = {}   # {ticker: [(timestamp, price), ...]}
     last_minute = None
 
-    while is_monitoring:
+    while True:
+        # 檢查會話是否還在監控中
+        with sessions_lock:
+            if session_id not in sessions or not sessions[session_id]['is_monitoring']:
+                print(f"會話 {session_id} 停止監控")
+                break
+
         now = datetime.now()
         current_minute = now.minute
 
@@ -146,7 +152,7 @@ def vol_detect_background(tickers, temp_data, volume_5ma_dict, min_price=0, max_
                     vol_increase_30sec = vol - vol_30sec_ago
                     vol_diff_30sec = (vol_increase_30sec / vol_30sec_ago) * 100
 
-                # 1���鐘增量：找最接近1分鐘前的記錄
+                # 1分鐘增量：找最接近1分鐘前的記錄
                 vol_1min_ago = None
                 for t, v in reversed(volume_history[ticker]):
                     time_diff = (now - t).total_seconds()
@@ -226,15 +232,18 @@ def vol_detect_background(tickers, temp_data, volume_5ma_dict, min_price=0, max_
                 print(f"處理 {ticker} 錯誤: {e}")
                 continue
 
-        # 更新全域監控資料 - 按照 vol_ratio 由大到小排序
+        # 更新會話監控資料 - 按照 vol_ratio 由大到小排序
         current_alerts.sort(key=lambda x: x['vol_ratio'], reverse=True)
-        monitoring_data = current_alerts
 
-        # 透過 WebSocket 推送更新
+        with sessions_lock:
+            if session_id in sessions:
+                sessions[session_id]['data'] = current_alerts
+
+        # 透過 WebSocket 推送更新到特定會話
         socketio.emit('update', {
             'data': current_alerts,
             'time': now.strftime("%Y-%m-%d %H:%M:%S")
-        })
+        }, room=session_id)
 
         # 當分鐘數改變時，更新前一分鐘的記錄
         if last_minute is None or current_minute != last_minute:
@@ -255,57 +264,113 @@ def index():
     """首頁"""
     return render_template('index.html')
 
+@socketio.on('connect')
+def handle_connect():
+    """客戶端連接時建立會話"""
+    session_id = request.sid
+    print(f"客戶端連接: {session_id}")
+
+    with sessions_lock:
+        sessions[session_id] = {
+            'data': [],
+            'is_monitoring': False,
+            'thread': None
+        }
+
+    join_room(session_id)
+    emit('session_id', {'session_id': session_id})
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """客戶端斷線時清理會話"""
+    session_id = request.sid
+    print(f"客戶端斷線: {session_id}")
+
+    with sessions_lock:
+        if session_id in sessions:
+            sessions[session_id]['is_monitoring'] = False
+            del sessions[session_id]
+
+    leave_room(session_id)
+
 @app.route('/api/start', methods=['POST'])
 def start_monitoring():
     """啟動監控"""
-    global is_monitoring, monitor_thread
-
     data = request.json
     tickers = data.get('tickers', [])
     min_price = data.get('min_price', 0)
     max_price = data.get('max_price', 999999)
+    session_id = data.get('session_id')
 
     if not tickers:
         return jsonify({'status': 'error', 'message': '請輸入股票代碼'})
 
-    if is_monitoring:
-        return jsonify({'status': 'error', 'message': '監控已在執行中'})
+    if not session_id:
+        return jsonify({'status': 'error', 'message': '無效的會話'})
 
-    is_monitoring = True
+    with sessions_lock:
+        if session_id not in sessions:
+            return jsonify({'status': 'error', 'message': '會話不存在'})
+
+        if sessions[session_id]['is_monitoring']:
+            return jsonify({'status': 'error', 'message': '監控已在執行中'})
+
+        sessions[session_id]['is_monitoring'] = True
 
     # 取得公司資訊
     temp_data = get_company_info(token)
 
     # 計算5日均量
-    socketio.emit('status', {'message': '正在計算5日平均成交量...'})
+    socketio.emit('status', {'message': '正在計算5日平均成交量...'}, room=session_id)
     volume_5ma_dict = get_5day_avg_volume(tickers, token)
 
     # 啟動背景監控
     monitor_thread = threading.Thread(
         target=vol_detect_background,
-        args=(tickers, temp_data, volume_5ma_dict, min_price, max_price),
+        args=(session_id, tickers, temp_data, volume_5ma_dict, min_price, max_price),
         daemon=True
     )
+
+    with sessions_lock:
+        sessions[session_id]['thread'] = monitor_thread
+
     monitor_thread.start()
 
-    socketio.emit('status', {'message': f'開始監控 {len(tickers)} 支股票'})
+    socketio.emit('status', {'message': f'開始監控 {len(tickers)} 支股票'}, room=session_id)
     return jsonify({'status': 'success', 'tickers_count': len(tickers)})
 
 @app.route('/api/stop', methods=['POST'])
 def stop_monitoring():
     """停止監控"""
-    global is_monitoring
-    is_monitoring = False
-    socketio.emit('status', {'message': '監控已停止'})
+    data = request.json or {}
+    session_id = data.get('session_id')
+
+    if not session_id:
+        return jsonify({'status': 'error', 'message': '無效的會話'})
+
+    with sessions_lock:
+        if session_id in sessions:
+            sessions[session_id]['is_monitoring'] = False
+
+    socketio.emit('status', {'message': '監控已停止'}, room=session_id)
     return jsonify({'status': 'success', 'message': '監控已停止'})
 
 @app.route('/api/data')
 def get_data():
     """取得當前監控資料"""
-    return jsonify({
-        'data': monitoring_data,
-        'is_monitoring': is_monitoring
-    })
+    session_id = request.args.get('session_id')
+
+    if not session_id:
+        return jsonify({'data': [], 'is_monitoring': False})
+
+    with sessions_lock:
+        if session_id in sessions:
+            return jsonify({
+                'data': sessions[session_id]['data'],
+                'is_monitoring': sessions[session_id]['is_monitoring']
+            })
+
+    return jsonify({'data': [], 'is_monitoring': False})
 
 if __name__ == '__main__':
     import os

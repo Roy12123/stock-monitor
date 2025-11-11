@@ -369,12 +369,35 @@
     <script>
         const socket = io();
         let isMonitoring = false;
+        let sessionId = null;
+
+        // 監聽會話ID
+        socket.on('session_id', function(data) {
+            sessionId = data.session_id;
+            console.log('會話ID:', sessionId);
+        });
 
         // 頁面載入時自動停止監控
         window.addEventListener('load', async function() {
+            // 等待會話ID
+            await new Promise(resolve => {
+                if (sessionId) {
+                    resolve();
+                } else {
+                    socket.on('session_id', function(data) {
+                        sessionId = data.session_id;
+                        resolve();
+                    });
+                }
+            });
+
             try {
                 // 頁面載入時自動呼叫停止 API
-                await fetch('/api/stop', { method: 'POST' });
+                await fetch('/api/stop', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ session_id: sessionId })
+                });
 
                 // 重置按鈕狀態
                 document.getElementById('startBtn').disabled = false;
@@ -421,7 +444,8 @@
                     body: JSON.stringify({
                         tickers: tickers,
                         min_price: minPrice,
-                        max_price: maxPrice
+                        max_price: maxPrice,
+                        session_id: sessionId
                     })
                 });
 
@@ -445,7 +469,9 @@
         async function stopMonitoring() {
             try {
                 const response = await fetch('/api/stop', {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ session_id: sessionId })
                 });
 
                 const result = await response.json();
@@ -457,7 +483,7 @@
                     document.getElementById('status').textContent = result.message;
                 }
             } catch (error) {
-                alert('停止失敗: ' + error);
+                alert('停止��敗: ' + error);
             }
         }
 
