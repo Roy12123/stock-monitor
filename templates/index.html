@@ -347,19 +347,20 @@
             <table>
                 <thead>
                     <tr>
-                        <th>移除</th>
-                        <th>代碼</th>
-                        <th>名稱</th>
-                        <th>價格</th>
-                        <th>漲幅%</th>
-                        <th>量/5MA</th>
-                        <th class="vol-column">量動能30"/1'/2'</th>
-                        <th class="price-column">價動能30"/1'/2'</th>
+                        <th style="color: white;">移除</th>
+                        <th style="color: white;">代碼</th>
+                        <th style="color: white;">名稱</th>
+                        <th style="color: white;">價格</th>
+                        <th style="color: white;">漲幅%</th>
+                        <th style="color: white;">量/5MA</th>
+                        <th style="color: white;">均價偏離</th>
+                        <th class="vol-column" style="color: white;">量動能30"/1'/2'</th>
+                        <th class="price-column" style="color: white;">額動能30"/1'/2'</th>
                     </tr>
                 </thead>
                 <tbody id="dataTable">
                     <tr>
-                        <td colspan="8" class="no-data">請輸入股票代碼並開始監控</td>
+                        <td colspan="9" class="no-data">請輸入股票代碼並開始監控</td>
                     </tr>
                 </tbody>
             </table>
@@ -571,7 +572,7 @@
             const tbody = document.getElementById('dataTable');
 
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="no-data">目前沒有符合條件的股票</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="no-data">目前沒有符合條件的股票</td></tr>';
                 return;
             }
 
@@ -594,6 +595,19 @@
                 const price1 = `<span class="${priceClass1}">${item.price_diff_1min >= 0 ? '+' : ''}${item.price_diff_1min}%</span>`;
                 const price2 = `<span class="${priceClass2}">${item.price_diff_2min >= 0 ? '+' : ''}${item.price_diff_2min}%</span>`;
 
+                // 格式化均價偏離
+                const avgDevClass = item.avg_price_deviation == 0 ? 'zero-value' : (item.avg_price_deviation >= 0 ? 'positive' : 'negative');
+                const avgDev = `<span class="${avgDevClass}">${item.avg_price_deviation >= 0 ? '+' : ''}${item.avg_price_deviation}%</span>`;
+
+                // 格式化金額動能數據
+                const amountClass30 = item.amount_diff_30sec == 0 ? 'zero-value' : (item.amount_diff_30sec >= 0 ? 'positive' : 'negative');
+                const amountClass1 = item.amount_diff_1min == 0 ? 'zero-value' : (item.amount_diff_1min >= 0 ? 'positive' : 'negative');
+                const amountClass2 = item.amount_diff_2min == 0 ? 'zero-value' : (item.amount_diff_2min >= 0 ? 'positive' : 'negative');
+
+                const amount30 = `<span class="${amountClass30}">${item.amount_diff_30sec >= 0 ? '+' : ''}${item.amount_diff_30sec}%</span>`;
+                const amount1 = `<span class="${amountClass1}">${item.amount_diff_1min >= 0 ? '+' : ''}${item.amount_diff_1min}%</span>`;
+                const amount2 = `<span class="${amountClass2}">${item.amount_diff_2min >= 0 ? '+' : ''}${item.amount_diff_2min}%</span>`;
+
                 return `
                     <tr class="new-row">
                         <td><button class="btn-remove" onclick="removeTicker('${item.ticker}')">X</button></td>
@@ -604,8 +618,9 @@
                             ${item.pct_change >= 0 ? '+' : ''}${item.pct_change}%
                         </td>
                         <td class="vol-ratio">${item.vol_ratio}%</td>
+                        <td>${avgDev}</td>
                         <td>${vol30}<span class="zero-value"> / </span>${vol1}<span class="zero-value"> / </span>${vol2}</td>
-                        <td>${price30}<span class="zero-value"> / </span>${price1}<span class="zero-value"> / </span>${price2}</td>
+                        <td>${amount30}<span class="zero-value"> / </span>${amount1}<span class="zero-value"> / </span>${amount2}</td>
                     </tr>
                 `;
             }).join('');

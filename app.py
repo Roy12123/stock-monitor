@@ -73,6 +73,7 @@ def vol_detect_background(session_id):
     previous_minute_volume = {}
     volume_history = {}  # {ticker: [(timestamp, volume), ...]}
     price_history = {}   # {ticker: [(timestamp, price), ...]}
+    amount_history = {}  # {ticker: [(timestamp, amount), ...]} 新增：金額歷史
     last_minute = None
 
     while True:
@@ -113,6 +114,11 @@ def vol_detect_background(session_id):
                 pct_change = data_aa['change_rate'].iloc[0]
                 price = data_aa['buy_price'].iloc[0]
 
+                # 新增：讀取均價和成交金額
+                average_price = data_aa['average_price'].iloc[0] if 'average_price' in data_aa.columns else price
+                amount = data_aa['amount'].iloc[0] if 'amount' in data_aa.columns else 0
+                total_amount = data_aa['total_amount'].iloc[0] if 'total_amount' in data_aa.columns else 0
+
                 volume_5ma = volume_5ma_dict.get(ticker, 0)
 
                 comp_name = temp_data[temp_data['股票代碼'] == ticker]
@@ -131,10 +137,17 @@ def vol_detect_background(session_id):
                     price_history[ticker] = []
                 price_history[ticker].append((now, price))
 
+                # 新增：記錄當前成交金額到歷史記錄
+                if ticker not in amount_history:
+                    amount_history[ticker] = []
+                amount_history[ticker].append((now, total_amount))
+
                 # 只保留最近3分鐘的記錄
                 volume_history[ticker] = [(t, v) for t, v in volume_history[ticker]
                                           if (now - t).total_seconds() <= 180]
                 price_history[ticker] = [(t, p) for t, p in price_history[ticker]
+                                         if (now - t).total_seconds() <= 180]
+                amount_history[ticker] = [(t, a) for t, a in amount_history[ticker]
                                          if (now - t).total_seconds() <= 180]
 
                 # 計算30秒、1分鐘、2分鐘的增量百分比
@@ -214,6 +227,52 @@ def vol_detect_background(session_id):
                 if price_2min_ago is not None and price_2min_ago > 0:
                     price_diff_2min = ((price - price_2min_ago) / price_2min_ago) * 100
 
+                # 新增：計算均價偏離度
+                avg_price_deviation = 0
+                if average_price > 0:
+                    avg_price_deviation = ((price - average_price) / average_price) * 100
+
+                # 新增：計算金額動能（30秒/1分鐘/2分鐘）
+                amount_diff_30sec = 0
+                amount_diff_1min = 0
+                amount_diff_2min = 0
+
+                # 30秒金額增量
+                amount_30sec_ago = None
+                for t, a in reversed(amount_history[ticker]):
+                    time_diff = (now - t).total_seconds()
+                    if 25 <= time_diff <= 35:
+                        amount_30sec_ago = a
+                        break
+
+                if amount_30sec_ago is not None and amount_30sec_ago > 0:
+                    amount_increase_30sec = total_amount - amount_30sec_ago
+                    amount_diff_30sec = (amount_increase_30sec / amount_30sec_ago) * 100
+
+                # 1分鐘金額增量
+                amount_1min_ago = None
+                for t, a in reversed(amount_history[ticker]):
+                    time_diff = (now - t).total_seconds()
+                    if 55 <= time_diff <= 65:
+                        amount_1min_ago = a
+                        break
+
+                if amount_1min_ago is not None and amount_1min_ago > 0:
+                    amount_increase_1min = total_amount - amount_1min_ago
+                    amount_diff_1min = (amount_increase_1min / amount_1min_ago) * 100
+
+                # 2分鐘金額增量
+                amount_2min_ago = None
+                for t, a in reversed(amount_history[ticker]):
+                    time_diff = (now - t).total_seconds()
+                    if 115 <= time_diff <= 125:
+                        amount_2min_ago = a
+                        break
+
+                if amount_2min_ago is not None and amount_2min_ago > 0:
+                    amount_increase_2min = total_amount - amount_2min_ago
+                    amount_diff_2min = (amount_increase_2min / amount_2min_ago) * 100
+
                 # 判斷條件（加入股價上下限）
                 if volume_5ma > 0:
                     vol_ratio = vol / volume_5ma
@@ -230,7 +289,11 @@ def vol_detect_background(session_id):
                             'vol_diff_2min': round(vol_diff_2min, 1),
                             'price_diff_30sec': round(price_diff_30sec, 2),
                             'price_diff_1min': round(price_diff_1min, 2),
-                            'price_diff_2min': round(price_diff_2min, 2)
+                            'price_diff_2min': round(price_diff_2min, 2),
+                            'avg_price_deviation': round(avg_price_deviation, 2),
+                            'amount_diff_30sec': round(amount_diff_30sec, 1),
+                            'amount_diff_1min': round(amount_diff_1min, 1),
+                            'amount_diff_2min': round(amount_diff_2min, 1)
                         }
                         current_alerts.append(alert_data)
             except Exception as e:
@@ -334,7 +397,7 @@ def start_monitoring():
     temp_data = get_company_info(token)
 
     # 計算5日均量
-    socketio.emit('status', {'message': '正在計算5日平均成交量...'}, room=session_id)
+    socketio.emit('status', {'message': '正在��算5日平均成交量...'}, room=session_id)
     volume_5ma_dict = get_5day_avg_volume(tickers, token)
 
     with sessions_lock:
