@@ -283,7 +283,23 @@
                 font-size: 11px;
             }
         }
-    </style>
+
+        /* 移除按鈕樣式 */
+        .btn-remove {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        .btn-remove:hover {
+            background: #da190b;
+            transform: scale(1.05);
+        }    </style>
 </head>
 <body>
     <div class="container">
@@ -331,6 +347,7 @@
             <table>
                 <thead>
                     <tr>
+                        <th>移除</th>
                         <th>代碼</th>
                         <th>名稱</th>
                         <th>價格</th>
@@ -342,7 +359,7 @@
                 </thead>
                 <tbody id="dataTable">
                     <tr>
-                        <td colspan="11" class="no-data">請輸入股票代碼並開始監控</td>
+                        <td colspan="8" class="no-data">請輸入股票代碼並開始監控</td>
                     </tr>
                 </tbody>
             </table>
@@ -449,7 +466,7 @@
             const tbody = document.getElementById('dataTable');
 
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="no-data">目前沒有符合條件的股票</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="no-data">目前沒有符合條件的股票</td></tr>';
                 return;
             }
 
@@ -474,6 +491,7 @@
 
                 return `
                     <tr class="new-row">
+                        <td><button class="btn-remove" onclick="removeTicker('${item.ticker}')">X</button></td>
                         <td class="ticker">${item.ticker}</td>
                         <td>${item.name}</td>
                         <td>${item.price}</td>
@@ -486,6 +504,32 @@
                     </tr>
                 `;
             }).join('');
+        }
+
+        // 移除股票代碼
+        let removedTickers = new Set();
+
+        function removeTicker(ticker) {
+            if (confirm(`確定要移除 ${ticker} 嗎？`)) {
+                removedTickers.add(ticker);
+                // 立即從顯示中移除
+                const tbody = document.getElementById('dataTable');
+                const rows = tbody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const tickerCell = row.querySelector('.ticker');
+                    if (tickerCell && tickerCell.textContent === ticker) {
+                        row.remove();
+                    }
+                });
+            }
+        }
+
+        // 修改 updateTable 函數，過濾掉已移除的股票
+        const originalUpdateTable = updateTable;
+        updateTable = function(data) {
+            // 過濾掉已移除的股票
+            const filteredData = data.filter(item => !removedTickers.has(item.ticker));
+            originalUpdateTable(filteredData);
         }
     </script>
 </body>
