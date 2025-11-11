@@ -257,7 +257,7 @@ def vol_detect_background(session_id, tickers, temp_data, volume_5ma_dict, min_p
                     continue
             last_minute = current_minute
 
-        time.sleep(5)
+        time.sleep(8)
 
 @app.route('/')
 def index():
