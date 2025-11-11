@@ -27,64 +27,64 @@
 
         /* 左側面板 */
         .sidebar {
-            width: 280px;
+            width: 180px;
             background: #2d2d2d;
-            padding: 15px;
+            padding: 12px;
             border-right: 2px solid #404040;
             overflow-y: auto;
         }
 
         .sidebar h1 {
             color: #4CAF50;
-            margin-bottom: 15px;
-            font-size: 20px;
+            margin-bottom: 12px;
+            font-size: 16px;
         }
 
         .input-group {
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
 
         .input-group label {
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
             color: #b0b0b0;
-            font-size: 13px;
+            font-size: 11px;
         }
 
         textarea {
             width: 100%;
-            min-height: 120px;
-            padding: 10px;
+            min-height: 80px;
+            padding: 6px;
             background: #1a1a1a;
             border: 1px solid #404040;
-            border-radius: 4px;
+            border-radius: 3px;
             color: #e0e0e0;
-            font-size: 13px;
+            font-size: 11px;
             resize: vertical;
         }
 
         input[type="number"] {
             width: 100%;
-            padding: 8px;
+            padding: 6px;
             background: #1a1a1a;
             border: 1px solid #404040;
-            border-radius: 4px;
+            border-radius: 3px;
             color: #e0e0e0;
-            font-size: 13px;
+            font-size: 11px;
         }
 
         .price-range {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
+            gap: 6px;
         }
 
         .btn {
             width: 100%;
-            padding: 10px;
+            padding: 8px;
             border: none;
-            border-radius: 4px;
-            font-size: 14px;
+            border-radius: 3px;
+            font-size: 12px;
             cursor: pointer;
             transition: all 0.3s;
             font-weight: bold;
@@ -93,7 +93,7 @@
         .btn-start {
             background: #4CAF50;
             color: white;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .btn-start:hover {
@@ -115,17 +115,17 @@
         }
 
         .status {
-            margin-top: 15px;
-            padding: 10px;
+            margin-top: 12px;
+            padding: 8px;
             background: #1a1a1a;
-            border-radius: 4px;
+            border-radius: 3px;
             border-left: 3px solid #4CAF50;
-            font-size: 13px;
+            font-size: 11px;
         }
 
         .help-text {
-            margin-top: 6px;
-            font-size: 11px;
+            margin-top: 4px;
+            font-size: 10px;
             color: #888;
         }
 
@@ -469,6 +469,9 @@
                     isMonitoring = true;
                     document.getElementById('stopBtn').disabled = false;
                     document.getElementById('status').textContent = `監控中 (${result.tickers_count} 支股票)`;
+
+                    // 清除輸入框
+                    document.getElementById('tickerInput').value = '';
                 } else {
                     alert(result.message);
                     document.getElementById('startBtn').disabled = false;
