@@ -329,7 +329,7 @@
                 </div>
             </div>
 
-            <button class="btn btn-start" id="startBtn" onclick="startMonitoring()">開始監控</button>
+            <button class="btn btn-start" id="startBtn" onclick="handleStartOrAdd()">開始監控</button>
             <button class="btn btn-stop" id="stopBtn" onclick="stopMonitoring()" disabled>停止監控</button>
 
             <div class="status" id="status">
@@ -400,7 +400,8 @@
                 });
 
                 // 重置按鈕狀態
-                document.getElementById('startBtn').disabled = false;
+                document.getElementById('startBtn').textContent = '開始監控';
+                    document.getElementById('startBtn').disabled = false;
                 document.getElementById('stopBtn').disabled = true;
                 document.getElementById('status').textContent = '等待啟動...';
             } catch (error) {
@@ -419,7 +420,15 @@
             document.getElementById('status').textContent = data.message;
         });
 
-        // 開始監��
+
+        // 處理開始監控或新增股票
+        async function handleStartOrAdd() {
+            if (isMonitoring) {
+                await addTickers();
+            } else {
+                await startMonitoring();
+            }
+        }        // 開始監��
         async function startMonitoring() {
             // 確保有 session_id
             if (!sessionId) {
@@ -467,6 +476,9 @@
 
                 if (result.status === 'success') {
                     isMonitoring = true;
+                    document.getElementById('startBtn').textContent = '新增股票';
+                    document.getElementById('startBtn').textContent = '開始監控';
+                    document.getElementById('startBtn').disabled = false;
                     document.getElementById('stopBtn').disabled = false;
                     document.getElementById('status').textContent = `監控中 (${result.tickers_count} 支股票)`;
 
@@ -474,16 +486,65 @@
                     document.getElementById('tickerInput').value = '';
                 } else {
                     alert(result.message);
+                    document.getElementById('startBtn').textContent = '開始監控';
                     document.getElementById('startBtn').disabled = false;
                 }
             } catch (error) {
                 alert('啟動失敗: ' + error);
-                document.getElementById('startBtn').disabled = false;
+                document.getElementById('startBtn').textContent = '開始監控';
+                    document.getElementById('startBtn').disabled = false;
             }
         }
 
         // 停止監控
-        async function stopMonitoring() {
+
+        // 新增股票到現有監控
+        async function addTickers() {
+            const tickerText = document.getElementById('tickerInput').value.trim();
+
+            if (!tickerText) {
+                alert('請輸入至少一個股票代碼');
+                return;
+            }
+
+            const tickers = tickerText.split('\n')
+                .map(t => t.trim())
+                .filter(t => t.length > 0);
+
+            document.getElementById('status').textContent = '正在新增股票...';
+            document.getElementById('startBtn').disabled = true;
+
+            try {
+                const response = await fetch('/api/add_tickers', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        tickers: tickers,
+                        session_id: sessionId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success' || result.status === 'info') {
+                    document.getElementById('status').textContent = `監控中 (共 ${result.total_count} 支股票)`;
+
+                    // 清除輸入框
+                    document.getElementById('tickerInput').value = '';
+
+                    if (result.added_count === 0) {
+                        alert(result.message);
+                    }
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert('新增失敗: ' + error);
+            } finally {
+                document.getElementById('startBtn').textContent = '開始監控';
+                    document.getElementById('startBtn').disabled = false;
+            }
+        }        async function stopMonitoring() {
             try {
                 const response = await fetch('/api/stop', {
                     method: 'POST',
@@ -495,6 +556,7 @@
 
                 if (result.status === 'success') {
                     isMonitoring = false;
+                    document.getElementById('startBtn').textContent = '開始監控';
                     document.getElementById('startBtn').disabled = false;
                     document.getElementById('stopBtn').disabled = true;
                     document.getElementById('status').textContent = result.message;

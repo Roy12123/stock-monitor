@@ -64,7 +64,7 @@ def get_company_info(token):
     temp_data.columns = ['公司產業', '股票代碼', '公司名稱']
     return temp_data
 
-def vol_detect_background(session_id, tickers, temp_data, volume_5ma_dict, min_price=0, max_price=999999):
+def vol_detect_background(session_id):
     """背景執行的監控函式 - 每個會話獨立"""
     headers = {"Authorization": f"Bearer {token}"}
     url = "https://api.finmindtrade.com/api/v4/taiwan_stock_tick_snapshot"
@@ -76,11 +76,16 @@ def vol_detect_background(session_id, tickers, temp_data, volume_5ma_dict, min_p
     last_minute = None
 
     while True:
-        # 檢查會話是否還在監控中
+        # 檢查會話是否還在監控中，並獲取當前監控的股票列表
         with sessions_lock:
             if session_id not in sessions or not sessions[session_id]['is_monitoring']:
                 print(f"會話 {session_id} 停止監控")
                 break
+            tickers = sessions[session_id]['tickers']
+            temp_data = sessions[session_id]['temp_data']
+            volume_5ma_dict = sessions[session_id]['volume_5ma_dict']
+            min_price = sessions[session_id]['min_price']
+            max_price = sessions[session_id]['max_price']
 
         now = datetime.now()
         current_minute = now.minute
@@ -274,7 +279,12 @@ def handle_connect():
         sessions[session_id] = {
             'data': [],
             'is_monitoring': False,
-            'thread': None
+            'thread': None,
+            'tickers': [],
+            'volume_5ma_dict': {},
+            'temp_data': None,
+            'min_price': 0,
+            'max_price': 999999
         }
 
     join_room(session_id)
@@ -316,6 +326,9 @@ def start_monitoring():
             return jsonify({'status': 'error', 'message': '監控已在執行中'})
 
         sessions[session_id]['is_monitoring'] = True
+        sessions[session_id]['tickers'] = tickers
+        sessions[session_id]['min_price'] = min_price
+        sessions[session_id]['max_price'] = max_price
 
     # 取得公司資訊
     temp_data = get_company_info(token)
@@ -324,10 +337,14 @@ def start_monitoring():
     socketio.emit('status', {'message': '正在計算5日平均成交量...'}, room=session_id)
     volume_5ma_dict = get_5day_avg_volume(tickers, token)
 
+    with sessions_lock:
+        sessions[session_id]['temp_data'] = temp_data
+        sessions[session_id]['volume_5ma_dict'] = volume_5ma_dict
+
     # 啟動背景監控
     monitor_thread = threading.Thread(
         target=vol_detect_background,
-        args=(session_id, tickers, temp_data, volume_5ma_dict, min_price, max_price),
+        args=(session_id,),
         daemon=True
     )
 
@@ -338,6 +355,50 @@ def start_monitoring():
 
     socketio.emit('status', {'message': f'開始監控 {len(tickers)} 支股票'}, room=session_id)
     return jsonify({'status': 'success', 'tickers_count': len(tickers)})
+
+@app.route('/api/add_tickers', methods=['POST'])
+def add_tickers():
+    """動態新增股票到現有監控"""
+    data = request.json
+    new_tickers = data.get('tickers', [])
+    session_id = data.get('session_id')
+
+    if not new_tickers:
+        return jsonify({'status': 'error', 'message': '請輸入股票代碼'})
+
+    if not session_id:
+        return jsonify({'status': 'error', 'message': '無效的會話'})
+
+    with sessions_lock:
+        if session_id not in sessions:
+            return jsonify({'status': 'error', 'message': '會話不存在'})
+
+        if not sessions[session_id]['is_monitoring']:
+            return jsonify({'status': 'error', 'message': '請先啟動監控'})
+
+        # 過濾掉已存在的股票代碼
+        existing_tickers = set(sessions[session_id]['tickers'])
+        truly_new_tickers = [t for t in new_tickers if t not in existing_tickers]
+
+        if not truly_new_tickers:
+            return jsonify({'status': 'info', 'message': '這些股票已在監控中', 'added_count': 0})
+
+    # 計算新股票的5日均量
+    socketio.emit('status', {'message': f'正在新增 {len(truly_new_tickers)} 支股票...'}, room=session_id)
+    new_volume_5ma_dict = get_5day_avg_volume(truly_new_tickers, token)
+
+    # 更新session中的數據
+    with sessions_lock:
+        if session_id in sessions:
+            sessions[session_id]['tickers'].extend(truly_new_tickers)
+            sessions[session_id]['volume_5ma_dict'].update(new_volume_5ma_dict)
+
+    socketio.emit('status', {'message': f'已新增 {len(truly_new_tickers)} 支股票到監控列表'}, room=session_id)
+    return jsonify({
+        'status': 'success',
+        'added_count': len(truly_new_tickers),
+        'total_count': len(sessions[session_id]['tickers'])
+    })
 
 @app.route('/api/stop', methods=['POST'])
 def stop_monitoring():
