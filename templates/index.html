@@ -355,12 +355,13 @@
                         <th style="color: white;">量/5MA</th>
                         <th style="color: white;">均價偏離</th>
                         <th class="vol-column" style="color: white;">量動能30"/1'/2'</th>
+                        <th class="price-column" style="color: white;">價動能30"/1'/2'</th>
                         <th class="price-column" style="color: white;">額動能30"/1'/2'</th>
                     </tr>
                 </thead>
                 <tbody id="dataTable">
                     <tr>
-                        <td colspan="9" class="no-data">請輸入股票代碼並開始監控</td>
+                        <td colspan="10" class="no-data">請輸入股票代碼並開始監控</td>
                     </tr>
                 </tbody>
             </table>
@@ -572,7 +573,7 @@
             const tbody = document.getElementById('dataTable');
 
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="no-data">目前沒有符合條件的股票</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="no-data">目前沒有符合條件的股票</td></tr>';
                 return;
             }
 
@@ -620,6 +621,7 @@
                         <td class="vol-ratio">${item.vol_ratio}%</td>
                         <td>${avgDev}</td>
                         <td>${vol30}<span class="zero-value"> / </span>${vol1}<span class="zero-value"> / </span>${vol2}</td>
+                        <td>${price30}<span class="zero-value"> / </span>${price1}<span class="zero-value"> / </span>${price2}</td>
                         <td>${amount30}<span class="zero-value"> / </span>${amount1}<span class="zero-value"> / </span>${amount2}</td>
                     </tr>
                 `;
