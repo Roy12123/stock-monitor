@@ -255,39 +255,74 @@
                 width: 100%;
                 border-right: none;
                 border-bottom: 2px solid #404040;
-                max-height: 50vh;
+                max-height: 40vh;
             }
 
             .sidebar h1 {
-                font-size: 18px;
-                margin-bottom: 10px;
+                font-size: 16px;
+                margin-bottom: 8px;
             }
 
             textarea {
-                min-height: 80px;
-                font-size: 12px;
+                min-height: 60px;
+                font-size: 11px;
             }
 
             .main-content {
-                padding: 10px;
+                padding: 5px;
                 overflow-x: auto;
             }
 
+            .header h2 {
+                font-size: 16px;
+            }
+
+            .last-update {
+                font-size: 11px;
+            }
+
             table {
-                font-size: 10px;
+                font-size: 9px;
+                min-width: 100%;
             }
 
             th, td {
-                padding: 6px 4px;
+                padding: 4px 2px;
+                white-space: nowrap;
             }
 
-            .vol-column, .price-column {
+            th {
+                font-size: 8px;
+                padding: 6px 2px;
+            }
+
+            .vol-column, .price-column, .amount-column {
+                font-size: 8px;
+                max-width: none;
+            }
+
+            .ticker {
                 font-size: 10px;
-                max-width: 140px;
+                font-weight: bold;
             }
 
-            .ticker, .vol-ratio {
-                font-size: 11px;
+            .vol-ratio {
+                font-size: 9px;
+            }
+
+            .btn-remove {
+                padding: 2px 4px;
+                font-size: 9px;
+            }
+
+            /* 手機版隱藏公司名稱欄位 */
+            th:nth-child(3), td:nth-child(3) {
+                display: none;
+            }
+
+            /* 手機版縮小分隔符號 */
+            .zero-value {
+                font-size: 8px;
             }
         }
 
