@@ -412,8 +412,12 @@
 
         // 監聽 WebSocket 更新
         socket.on('update', function(data) {
-            updateTable(data.data);
-            document.getElementById('lastUpdate').textContent = '最後更新: ' + data.time;
+            if (data.data && Array.isArray(data.data)) {
+                updateTable(data.data);
+            }
+            if (data.time) {
+                document.getElementById('lastUpdate').textContent = '最後更新: ' + data.time;
+            }
         });
 
         socket.on('status', function(data) {
@@ -477,7 +481,6 @@
                 if (result.status === 'success') {
                     isMonitoring = true;
                     document.getElementById('startBtn').textContent = '新增股票';
-                    document.getElementById('startBtn').textContent = '開始監控';
                     document.getElementById('startBtn').disabled = false;
                     document.getElementById('stopBtn').disabled = false;
                     document.getElementById('status').textContent = `監控中 (${result.tickers_count} 支股票)`;
@@ -486,13 +489,11 @@
                     document.getElementById('tickerInput').value = '';
                 } else {
                     alert(result.message);
-                    document.getElementById('startBtn').textContent = '開始監控';
                     document.getElementById('startBtn').disabled = false;
                 }
             } catch (error) {
                 alert('啟動失敗: ' + error);
-                document.getElementById('startBtn').textContent = '開始監控';
-                    document.getElementById('startBtn').disabled = false;
+                document.getElementById('startBtn').disabled = false;
             }
         }
 
@@ -541,8 +542,7 @@
             } catch (error) {
                 alert('新增失敗: ' + error);
             } finally {
-                document.getElementById('startBtn').textContent = '開始監控';
-                    document.getElementById('startBtn').disabled = false;
+                document.getElementById('startBtn').disabled = false;
             }
         }        async function stopMonitoring() {
             try {
