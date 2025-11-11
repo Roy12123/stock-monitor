@@ -421,6 +421,20 @@
 
         // 開始監��
         async function startMonitoring() {
+            // 確保有 session_id
+            if (!sessionId) {
+                alert('正在連接伺服器，請稍候...');
+                // 等待最多5秒獲取 session_id
+                for (let i = 0; i < 50; i++) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    if (sessionId) break;
+                }
+                if (!sessionId) {
+                    alert('無法連接伺服器，請重新整理頁面');
+                    return;
+                }
+            }
+
             const tickerText = document.getElementById('tickerInput').value.trim();
             const minPrice = parseFloat(document.getElementById('minPrice').value) || 0;
             const maxPrice = parseFloat(document.getElementById('maxPrice').value) || 999999;
