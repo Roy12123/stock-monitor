@@ -226,7 +226,8 @@ def vol_detect_background(tickers, temp_data, volume_5ma_dict, min_price=0, max_
                 print(f"處理 {ticker} 錯誤: {e}")
                 continue
 
-        # 更新全域監控資料
+        # 更新全域監控資料 - 按照 vol_ratio 由大到小排序
+        current_alerts.sort(key=lambda x: x['vol_ratio'], reverse=True)
         monitoring_data = current_alerts
 
         # 透過 WebSocket 推送更新
