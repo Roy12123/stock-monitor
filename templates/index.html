@@ -245,6 +245,18 @@
             animation: highlight 1s ease-out;
         }
 
+        /* 強勢股標記 - 價量動能皆為正且漲幅適中 */
+        tr.momentum-alert {
+            background: linear-gradient(90deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 165, 0, 0.15) 100%);
+            border-left: 4px solid #FFD700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        tr.momentum-alert:hover {
+            background: linear-gradient(90deg, rgba(255, 215, 0, 0.25) 0%, rgba(255, 165, 0, 0.25) 100%);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+
         /* 手機版響應式設計 */
         @media (max-width: 768px) {
             .container {
@@ -637,8 +649,17 @@
                 const avgDevClass = item.avg_price_deviation == 0 ? 'zero-value' : (item.avg_price_deviation >= 0 ? 'positive' : 'negative');
                 const avgDev = `<span class="${avgDevClass}">${item.avg_price_deviation >= 0 ? '+' : ''}${item.avg_price_deviation}%</span>`;
 
+                // 判斷是否符合強勢股條件：價量動能三個時間區間皆為正，且漲幅在-10%到+5%之間
+                const isMomentumAlert = (
+                    item.vol_diff_30sec > 0 && item.vol_diff_1min > 0 && item.vol_diff_2min > 0 &&
+                    item.price_diff_30sec > 0 && item.price_diff_1min > 0 && item.price_diff_2min > 0 &&
+                    item.pct_change >= -10 && item.pct_change <= 5
+                );
+
+                const rowClass = isMomentumAlert ? 'new-row momentum-alert' : 'new-row';
+
                 return `
-                    <tr class="new-row">
+                    <tr class="${rowClass}">
                         <td><button class="btn-remove" onclick="removeTicker('${item.ticker}')">X</button></td>
                         <td class="ticker">${item.ticker}</td>
                         <td>${item.name}</td>
