@@ -12,3 +12,7 @@ build/
 .DS_Store
 *.xlsx
 *.xls
+*.bak
+*.bak2
+*.log
+flask_output.log
