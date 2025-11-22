@@ -222,13 +222,13 @@
         /* ===== 卡片式設計 ===== */
         .stock-grid {
             display: grid;
-            gap: 12px;
+            gap: 10px;
         }
 
         .stock-card {
             background: var(--bg-card);
-            border-radius: 12px;
-            padding: 14px;
+            border-radius: 10px;
+            padding: 10px;
             border: 1px solid var(--border-color);
             position: relative;
             transition: all 0.3s;
@@ -248,10 +248,11 @@
         .stock-card.momentum-alert::before {
             content: '⚡';
             position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 20px;
+            top: 8px;
+            right: 8px;
+            font-size: 18px;
             animation: pulse 2s ease-in-out infinite;
+            z-index: 10;
         }
 
         @keyframes pulse {
@@ -261,42 +262,45 @@
 
         .card-header {
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 12px;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin-bottom: 10px;
+            padding-top: 8px;
         }
 
         .stock-info {
-            flex: 1;
+            margin-bottom: 8px;
         }
 
         .stock-ticker {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             color: var(--primary-green);
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
 
         .stock-name {
-            font-size: 13px;
+            font-size: 11px;
             color: var(--text-secondary);
         }
 
         .price-info {
-            text-align: right;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .stock-price {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 700;
             color: var(--text-primary);
-            margin-bottom: 4px;
         }
 
         .price-change {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
-            padding: 4px 8px;
+            padding: 3px 6px;
             border-radius: 4px;
             display: inline-block;
         }
@@ -314,49 +318,49 @@
         .metrics-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 8px;
+            margin-bottom: 8px;
         }
 
         .metric-box {
             background: rgba(255,255,255,0.03);
-            padding: 8px;
-            border-radius: 8px;
+            padding: 6px;
+            border-radius: 6px;
             border: 1px solid var(--border-color);
         }
 
         .metric-label {
-            font-size: 10px;
+            font-size: 9px;
             color: var(--text-muted);
-            margin-bottom: 4px;
+            margin-bottom: 3px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .metric-value {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             color: var(--primary-blue);
         }
 
         .momentum-section {
-            margin-top: 10px;
-            padding-top: 10px;
+            margin-top: 8px;
+            padding-top: 8px;
             border-top: 1px solid var(--border-color);
         }
 
         .momentum-label {
-            font-size: 10px;
+            font-size: 9px;
             color: var(--text-muted);
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
 
         .momentum-bars {
             display: flex;
-            gap: 6px;
+            gap: 4px;
         }
 
         .momentum-bar {
@@ -365,15 +369,15 @@
         }
 
         .bar-label {
-            font-size: 9px;
+            font-size: 8px;
             color: var(--text-muted);
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
 
         .bar-value {
-            padding: 6px 4px;
-            border-radius: 6px;
-            font-size: 12px;
+            padding: 5px 3px;
+            border-radius: 5px;
+            font-size: 11px;
             font-weight: 600;
             background: rgba(255,255,255,0.05);
             border: 1px solid var(--border-color);
@@ -397,22 +401,23 @@
 
         .remove-btn {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 8px;
+            left: 8px;
             background: rgba(244, 67, 54, 0.8);
             color: white;
             border: none;
-            width: 28px;
-            height: 28px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 700;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            z-index: 10;
         }
 
         .remove-btn:active {

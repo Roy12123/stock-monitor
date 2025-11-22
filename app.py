@@ -112,7 +112,15 @@ def vol_detect_background(session_id):
 
                 vol = data_aa['total_volume'].iloc[0]
                 pct_change = data_aa['change_rate'].iloc[0]
-                price = data_aa['buy_price'].iloc[0]
+
+                # 使用 close (最新成交價)，如果為0則用 buy_price 或 sell_price
+                price = data_aa['close'].iloc[0]
+                if price == 0 or pd.isna(price):
+                    price = data_aa['buy_price'].iloc[0]
+                if price == 0 or pd.isna(price):
+                    price = data_aa['sell_price'].iloc[0]
+                if price == 0 or pd.isna(price):
+                    price = data_aa['open'].iloc[0]
 
                 # 新增：讀取均價和成交金額
                 average_price = data_aa['average_price'].iloc[0] if 'average_price' in data_aa.columns else price
