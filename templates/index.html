@@ -488,7 +488,56 @@
 
             .stock-grid {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 16px;
+                gap: 12px;
+            }
+
+            /* 平板版字體放大 */
+            .stock-card {
+                padding: 10px;
+            }
+
+            .stock-ticker {
+                font-size: 18px;
+            }
+
+            .stock-name {
+                font-size: 13px;
+            }
+
+            .stock-price {
+                font-size: 18px;
+            }
+
+            .price-change {
+                font-size: 12px;
+                padding: 3px 6px;
+            }
+
+            .metric-label {
+                font-size: 10px;
+            }
+
+            .metric-value {
+                font-size: 15px;
+            }
+
+            .momentum-label {
+                font-size: 10px;
+            }
+
+            .bar-value {
+                font-size: 12px;
+                padding: 5px 3px;
+            }
+
+            .remove-btn {
+                width: 24px;
+                height: 24px;
+                font-size: 14px;
+            }
+
+            .card-header {
+                padding-left: 32px;
             }
         }
 
@@ -523,6 +572,84 @@
 
             .stock-grid {
                 grid-template-columns: repeat(3, 1fr);
+                gap: 16px;
+            }
+
+            /* 桌面版字體進一步放大 */
+            .stock-card {
+                padding: 12px;
+                border-radius: 10px;
+            }
+
+            .stock-ticker {
+                font-size: 20px;
+            }
+
+            .stock-name {
+                font-size: 14px;
+            }
+
+            .stock-price {
+                font-size: 20px;
+            }
+
+            .price-change {
+                font-size: 13px;
+                padding: 4px 8px;
+            }
+
+            .metric-label {
+                font-size: 11px;
+            }
+
+            .metric-value {
+                font-size: 16px;
+            }
+
+            .metric-box {
+                padding: 8px;
+            }
+
+            .momentum-label {
+                font-size: 11px;
+            }
+
+            .bar-value {
+                font-size: 13px;
+                padding: 6px 4px;
+            }
+
+            .remove-btn {
+                width: 26px;
+                height: 26px;
+                font-size: 15px;
+                top: 8px;
+                left: 8px;
+            }
+
+            .stock-card.momentum-alert::before {
+                font-size: 20px;
+                top: 8px;
+                right: 8px;
+            }
+
+            .card-header {
+                padding-left: 36px;
+                margin-bottom: 10px;
+            }
+
+            .metrics-row {
+                gap: 8px;
+                margin-bottom: 8px;
+            }
+
+            .momentum-section {
+                margin-top: 8px;
+                padding-top: 8px;
+            }
+
+            .momentum-bars {
+                gap: 4px;
             }
         }
 
