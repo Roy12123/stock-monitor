@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>股票監控系統</title>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <style>
@@ -12,32 +12,80 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --primary-green: #4CAF50;
+            --primary-red: #f44336;
+            --primary-blue: #2196F3;
+            --primary-orange: #FF9800;
+            --primary-gold: #FFD700;
+            --bg-dark: #0a0a0a;
+            --bg-card: #1a1a1a;
+            --bg-elevated: #2d2d2d;
+            --border-color: #404040;
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --text-muted: #888;
+        }
+
         body {
-            font-family: 'Microsoft JhengHei', Arial, sans-serif;
-            background: #1a1a1a;
-            color: #e0e0e0;
-            height: 100vh;
-            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft JhengHei', Arial, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        .container {
+        /* ===== 控制面板 ===== */
+        .control-panel {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--bg-elevated);
+            border-bottom: 2px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .panel-header h1 {
+            color: var(--primary-green);
+            font-size: 18px;
+            font-weight: 600;
             display: flex;
-            height: 100vh;
+            align-items: center;
+            gap: 8px;
         }
 
-        /* 左側面板 */
-        .sidebar {
-            width: 180px;
-            background: #2d2d2d;
-            padding: 12px;
-            border-right: 2px solid #404040;
-            overflow-y: auto;
+        .panel-content {
+            padding: 12px 16px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
         }
 
-        .sidebar h1 {
-            color: #4CAF50;
-            margin-bottom: 12px;
-            font-size: 16px;
+        .panel-content.expanded {
+            max-height: 600px;
+        }
+
+        .toggle-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 14px;
+            margin-top: 8px;
+            transition: all 0.2s;
+        }
+
+        .toggle-panel:active {
+            transform: scale(0.98);
         }
 
         .input-group {
@@ -46,374 +94,494 @@
 
         .input-group label {
             display: block;
-            margin-bottom: 5px;
-            color: #b0b0b0;
-            font-size: 11px;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 500;
         }
 
         textarea {
             width: 100%;
             min-height: 80px;
-            padding: 6px;
-            background: #1a1a1a;
-            border: 1px solid #404040;
-            border-radius: 3px;
-            color: #e0e0e0;
-            font-size: 11px;
+            padding: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
             resize: vertical;
+            font-family: 'Courier New', monospace;
         }
 
-        input[type="number"] {
-            width: 100%;
-            padding: 6px;
-            background: #1a1a1a;
-            border: 1px solid #404040;
-            border-radius: 3px;
-            color: #e0e0e0;
-            font-size: 11px;
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
         }
 
         .price-range {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 6px;
+            gap: 10px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 12px;
         }
 
         .btn {
-            width: 100%;
-            padding: 8px;
+            padding: 12px;
             border: none;
-            border-radius: 3px;
-            font-size: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-            font-weight: bold;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
         }
 
         .btn-start {
-            background: #4CAF50;
+            background: linear-gradient(135deg, var(--primary-green) 0%, #45a049 100%);
             color: white;
-            margin-bottom: 8px;
-        }
-
-        .btn-start:hover {
-            background: #45a049;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
         }
 
         .btn-stop {
-            background: #f44336;
+            background: linear-gradient(135deg, var(--primary-red) 0%, #da190b 100%);
             color: white;
-        }
-
-        .btn-stop:hover {
-            background: #da190b;
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
         }
 
         .btn:disabled {
             background: #555;
             cursor: not-allowed;
+            box-shadow: none;
+            opacity: 0.6;
         }
 
-        .status {
+        .status-bar {
             margin-top: 12px;
-            padding: 8px;
-            background: #1a1a1a;
-            border-radius: 3px;
-            border-left: 3px solid #4CAF50;
-            font-size: 11px;
+            padding: 10px 12px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            border-left: 3px solid var(--primary-green);
+            font-size: 12px;
+            color: var(--text-secondary);
         }
 
-        .help-text {
-            margin-top: 4px;
-            font-size: 10px;
-            color: #888;
-        }
-
-        /* 主要內容區 */
+        /* ===== 主要內容區 ===== */
         .main-content {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 80px;
         }
 
-        .header {
+        .content-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #404040;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border-color);
         }
 
-        .header h2 {
-            color: #4CAF50;
+        .content-header h2 {
+            color: var(--primary-green);
+            font-size: 18px;
+            font-weight: 600;
         }
 
         .last-update {
-            color: #888;
-            font-size: 14px;
+            color: var(--text-muted);
+            font-size: 11px;
         }
 
-        /* 表格樣式 */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #2d2d2d;
+        /* ===== 卡片式設計 ===== */
+        .stock-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .stock-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .stock-card:active {
+            transform: scale(0.99);
+        }
+
+        .stock-card.momentum-alert {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 165, 0, 0.15) 100%);
+            border-color: var(--primary-gold);
+            box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
+        }
+
+        .stock-card.momentum-alert::before {
+            content: '⚡';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .stock-info {
+            flex: 1;
+        }
+
+        .stock-ticker {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-green);
+            margin-bottom: 4px;
+        }
+
+        .stock-name {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .price-info {
+            text-align: right;
+        }
+
+        .stock-price {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .price-change {
+            font-size: 13px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .price-change.positive {
+            background: rgba(244, 67, 54, 0.2);
+            color: var(--primary-red);
+        }
+
+        .price-change.negative {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--primary-green);
+        }
+
+        .metrics-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .metric-box {
+            background: rgba(255,255,255,0.03);
+            padding: 8px;
             border-radius: 8px;
-            overflow: hidden;
+            border: 1px solid var(--border-color);
         }
 
-        thead {
-            background: #404040;
+        .metric-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        th {
-            padding: 15px;
-            text-align: left;
-            font-weight: bold;
-            color: #4CAF50;
-            border-bottom: 2px solid #505050;
+        .metric-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-blue);
         }
 
-        td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #404040;
+        .momentum-section {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border-color);
         }
 
-        tbody tr:hover {
-            background: #353535;
+        .momentum-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .momentum-bars {
+            display: flex;
+            gap: 6px;
+        }
+
+        .momentum-bar {
+            flex: 1;
+            text-align: center;
+        }
+
+        .bar-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .bar-value {
+            padding: 6px 4px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .bar-value.positive {
+            background: rgba(244, 67, 54, 0.2);
+            color: var(--primary-red);
+            border-color: var(--primary-red);
+        }
+
+        .bar-value.negative {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--primary-green);
+            border-color: var(--primary-green);
+        }
+
+        .bar-value.neutral {
+            color: var(--text-muted);
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(244, 67, 54, 0.8);
+            color: white;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .remove-btn:active {
+            transform: scale(0.9);
+            background: var(--primary-red);
         }
 
         .no-data {
             text-align: center;
-            padding: 40px;
-            color: #888;
-            font-size: 16px;
+            padding: 60px 20px;
+            color: var(--text-muted);
         }
 
-        .positive {
-            color: #f44336;
+        .no-data-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
         }
 
-        .negative {
-            color: #4CAF50;
+        .no-data-text {
+            font-size: 14px;
         }
 
-        .ticker {
-            font-weight: bold;
-            color: #4CAF50;
+        /* ===== 新增動畫 ===== */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .vol-ratio {
-            font-weight: bold;
-            color: #2196F3;
+        .stock-card {
+            animation: slideIn 0.3s ease-out;
         }
 
-        /* 量相關欄位背景 */
-        .vol-column {
-            background: rgba(33, 150, 243, 0.25);
-            white-space: nowrap;
-            max-width: 200px;
-        }
-
-        /* 價相關欄位背景 */
-        .price-column {
-            background: rgba(255, 152, 0, 0.25);
-            white-space: nowrap;
-            max-width: 200px;
-        }
-
-        /* 金額相關欄位背景 */
-        .amount-column {
-            background: rgba(244, 67, 54, 0.25);
-            white-space: nowrap;
-            max-width: 200px;
-        }
-
-        /* 0% 顯示白色 */
-        .zero-value {
-            color: #e0e0e0 !important;
-        }
-
-        /* 新增資料動畫 */
-        @keyframes highlight {
-            0% { background: #4CAF50; }
-            100% { background: transparent; }
-        }
-
-        tr.new-row {
-            animation: highlight 1s ease-out;
-        }
-
-        /* 強勢股標記 - 價量動能皆為正且漲幅適中 */
-        tr.momentum-alert {
-            background: linear-gradient(90deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 165, 0, 0.15) 100%);
-            border-left: 4px solid #FFD700;
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-        }
-
-        tr.momentum-alert:hover {
-            background: linear-gradient(90deg, rgba(255, 215, 0, 0.25) 0%, rgba(255, 165, 0, 0.25) 100%);
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
-        }
-
-        /* 手機版響應式設計 */
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
+        /* ===== 平板和桌面版調整 ===== */
+        @media (min-width: 768px) {
+            .control-panel {
+                position: relative;
             }
 
-            .sidebar {
-                width: 100%;
-                border-right: none;
-                border-bottom: 2px solid #404040;
-                max-height: 40vh;
+            .panel-content {
+                max-height: none !important;
+                overflow: visible;
             }
 
-            .sidebar h1 {
-                font-size: 16px;
-                margin-bottom: 8px;
-            }
-
-            textarea {
-                min-height: 60px;
-                font-size: 11px;
+            .toggle-panel {
+                display: none;
             }
 
             .main-content {
-                padding: 5px;
-                overflow-x: auto;
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 24px;
             }
 
-            .header h2 {
-                font-size: 16px;
-            }
-
-            .last-update {
-                font-size: 11px;
-            }
-
-            table {
-                font-size: 9px;
-                min-width: 100%;
-            }
-
-            th, td {
-                padding: 4px 2px;
-                white-space: nowrap;
-            }
-
-            th {
-                font-size: 8px;
-                padding: 6px 2px;
-            }
-
-            .vol-column, .price-column, .amount-column {
-                font-size: 8px;
-                max-width: none;
-            }
-
-            .ticker {
-                font-size: 10px;
-                font-weight: bold;
-            }
-
-            .vol-ratio {
-                font-size: 9px;
-            }
-
-            .btn-remove {
-                padding: 2px 4px;
-                font-size: 9px;
-            }
-
-
-            /* 手機版縮小分隔符號 */
-            .zero-value {
-                font-size: 8px;
+            .stock-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
             }
         }
 
-        /* 移除按鈕樣式 */
-        .btn-remove {
-            background: #f44336;
-            color: white;
-            border: none;
-            padding: 4px 8px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 11px;
-            transition: all 0.2s;
+        @media (min-width: 1200px) {
+            body {
+                display: flex;
+            }
+
+            .control-panel {
+                width: 320px;
+                height: 100vh;
+                position: sticky;
+                top: 0;
+                border-bottom: none;
+                border-right: 2px solid var(--border-color);
+                overflow-y: auto;
+            }
+
+            .panel-header {
+                padding: 20px;
+            }
+
+            .panel-content {
+                padding: 0 20px 20px;
+            }
+
+            .main-content {
+                flex: 1;
+                height: 100vh;
+                overflow-y: auto;
+            }
+
+            .stock-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
         }
 
-        .btn-remove:hover {
-            background: #da190b;
-            transform: scale(1.05);
-        }    </style>
+        /* ===== Loading 動畫 ===== */
+        .loading-spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <!-- 左側控制面板 -->
-        <div class="sidebar">
+    <!-- 控制面板 -->
+    <div class="control-panel">
+        <div class="panel-header">
             <h1>📊 股票監控系統</h1>
+            <button class="toggle-panel" onclick="togglePanel()">
+                <span id="toggleText">▼ 展開設定</span>
+            </button>
+        </div>
 
+        <div class="panel-content" id="panelContent">
             <div class="input-group">
-                <label>股票代碼 (每行一個)</label>
-                <textarea id="tickerInput" placeholder="例如:&#10;2330&#10;2454&#10;2317">2408
+                <label>股票代碼（每行一個）</label>
+                <textarea id="tickerInput" placeholder="例如：&#10;2330&#10;2454&#10;2317">2408
 2337
 3260</textarea>
-                <div class="help-text">* 每行輸入一個股票代碼</div>
             </div>
 
             <div class="input-group">
                 <label>股價範圍</label>
                 <div class="price-range">
                     <div>
-                        <label style="font-size: 12px;">最低價</label>
+                        <label style="font-size: 11px; margin-bottom: 4px;">最低價</label>
                         <input type="number" id="minPrice" value="0" min="0">
                     </div>
                     <div>
-                        <label style="font-size: 12px;">最高價</label>
+                        <label style="font-size: 11px; margin-bottom: 4px;">最高價</label>
                         <input type="number" id="maxPrice" value="250" min="0">
                     </div>
                 </div>
             </div>
 
-            <button class="btn btn-start" id="startBtn" onclick="handleStartOrAdd()">開始監控</button>
-            <button class="btn btn-stop" id="stopBtn" onclick="stopMonitoring()" disabled>停止監控</button>
-
-            <div class="status" id="status">
-                等待啟動...
+            <div class="button-group">
+                <button class="btn btn-start" id="startBtn" onclick="handleStartOrAdd()">開始監控</button>
+                <button class="btn btn-stop" id="stopBtn" onclick="stopMonitoring()" disabled>停止監控</button>
             </div>
+
+            <div class="status-bar" id="status">等待啟動...</div>
+        </div>
+    </div>
+
+    <!-- 主要內容區 -->
+    <div class="main-content">
+        <div class="content-header">
+            <h2>即時監控</h2>
+            <div class="last-update" id="lastUpdate">尚未更新</div>
         </div>
 
-        <!-- 主要內容區 -->
-        <div class="main-content">
-            <div class="header">
-                <h2>即時監控數據</h2>
-                <div class="last-update" id="lastUpdate">尚未更新</div>
+        <div class="stock-grid" id="stockGrid">
+            <div class="no-data">
+                <div class="no-data-icon">📈</div>
+                <div class="no-data-text">請輸入股票代碼並開始監控</div>
             </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th style="color: white;">移除</th>
-                        <th style="color: white;">代碼</th>
-                        <th style="color: white;">名稱</th>
-                        <th style="color: white;">價格</th>
-                        <th style="color: white;">漲幅%</th>
-                        <th style="color: white;">量/5MA</th>
-                        <th style="color: white;">均價偏離</th>
-                        <th class="vol-column" style="color: white;">量動能30"/1'/2'</th>
-                        <th class="price-column" style="color: white;">價動能30"/1'/2'</th>
-                    </tr>
-                </thead>
-                <tbody id="dataTable">
-                    <tr>
-                        <td colspan="9" class="no-data">請輸入股票代碼並開始監控</td>
-                    </tr>
-                </tbody>
-            </table>
         </div>
     </div>
 
@@ -421,6 +589,21 @@
         const socket = io();
         let isMonitoring = false;
         let sessionId = null;
+        let removedTickers = new Set();
+
+        // 切換面板
+        function togglePanel() {
+            const panel = document.getElementById('panelContent');
+            const toggleText = document.getElementById('toggleText');
+
+            if (panel.classList.contains('expanded')) {
+                panel.classList.remove('expanded');
+                toggleText.textContent = '▼ 展開設定';
+            } else {
+                panel.classList.add('expanded');
+                toggleText.textContent = '▲ 收起設定';
+            }
+        }
 
         // 監聽會話ID
         socket.on('session_id', function(data) {
@@ -430,7 +613,6 @@
 
         // 頁面載入時自動停止監控
         window.addEventListener('load', async function() {
-            // 等待會話ID
             await new Promise(resolve => {
                 if (sessionId) {
                     resolve();
@@ -443,16 +625,14 @@
             });
 
             try {
-                // 頁面載入時自動呼叫停止 API
                 await fetch('/api/stop', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ session_id: sessionId })
                 });
 
-                // 重置按鈕狀態
                 document.getElementById('startBtn').textContent = '開始監控';
-                    document.getElementById('startBtn').disabled = false;
+                document.getElementById('startBtn').disabled = false;
                 document.getElementById('stopBtn').disabled = true;
                 document.getElementById('status').textContent = '等待啟動...';
             } catch (error) {
@@ -464,17 +644,117 @@
         // 監聽 WebSocket 更新
         socket.on('update', function(data) {
             if (data.data && Array.isArray(data.data)) {
-                updateTable(data.data);
+                updateStockGrid(data.data);
             }
             if (data.time) {
-                document.getElementById('lastUpdate').textContent = '最後更新: ' + data.time;
+                document.getElementById('lastUpdate').textContent = '更新: ' + data.time.split(' ')[1];
             }
         });
 
         socket.on('status', function(data) {
-            document.getElementById('status').textContent = data.message;
+            document.getElementById('status').innerHTML = data.message;
         });
 
+        // 更新股票卡片
+        function updateStockGrid(data) {
+            const grid = document.getElementById('stockGrid');
+
+            // 過濾已移除的股票
+            const filteredData = data.filter(item => !removedTickers.has(item.ticker));
+
+            if (filteredData.length === 0) {
+                grid.innerHTML = `
+                    <div class="no-data">
+                        <div class="no-data-icon">📊</div>
+                        <div class="no-data-text">目前沒有符合條件的股票</div>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filteredData.map(item => {
+                const isMomentumAlert = (
+                    item.vol_diff_30sec > 0 && item.vol_diff_1min > 0 && item.vol_diff_2min > 0 &&
+                    item.price_diff_30sec > 0 && item.price_diff_1min > 0 && item.price_diff_2min > 0 &&
+                    item.pct_change >= -10 && item.pct_change <= 5
+                );
+
+                const priceChangeClass = item.pct_change >= 0 ? 'positive' : 'negative';
+
+                return `
+                    <div class="stock-card ${isMomentumAlert ? 'momentum-alert' : ''}">
+                        <button class="remove-btn" onclick="removeTicker('${item.ticker}')">×</button>
+
+                        <div class="card-header">
+                            <div class="stock-info">
+                                <div class="stock-ticker">${item.ticker}</div>
+                                <div class="stock-name">${item.name}</div>
+                            </div>
+                            <div class="price-info">
+                                <div class="stock-price">${item.price}</div>
+                                <div class="price-change ${priceChangeClass}">
+                                    ${item.pct_change >= 0 ? '+' : ''}${item.pct_change}%
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="metrics-row">
+                            <div class="metric-box">
+                                <div class="metric-label">量/5MA</div>
+                                <div class="metric-value">${item.vol_ratio}%</div>
+                            </div>
+                            <div class="metric-box">
+                                <div class="metric-label">均價偏離</div>
+                                <div class="metric-value ${item.avg_price_deviation >= 0 ? 'positive' : 'negative'}" style="color: ${item.avg_price_deviation >= 0 ? 'var(--primary-red)' : 'var(--primary-green)'}">
+                                    ${item.avg_price_deviation >= 0 ? '+' : ''}${item.avg_price_deviation}%
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="momentum-section">
+                            <div class="momentum-label">📊 量動能（30秒/1分/2分）</div>
+                            <div class="momentum-bars">
+                                ${createMomentumBar(item.vol_diff_30sec)}
+                                ${createMomentumBar(item.vol_diff_1min)}
+                                ${createMomentumBar(item.vol_diff_2min)}
+                            </div>
+                        </div>
+
+                        <div class="momentum-section">
+                            <div class="momentum-label">💰 價動能（30秒/1分/2分）</div>
+                            <div class="momentum-bars">
+                                ${createMomentumBar(item.price_diff_30sec)}
+                                ${createMomentumBar(item.price_diff_1min)}
+                                ${createMomentumBar(item.price_diff_2min)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function createMomentumBar(value) {
+            const barClass = value == 0 ? 'neutral' : (value > 0 ? 'positive' : 'negative');
+            const displayValue = value >= 0 ? `+${value}` : value;
+            return `
+                <div class="momentum-bar">
+                    <div class="bar-value ${barClass}">${displayValue}%</div>
+                </div>
+            `;
+        }
+
+        // 移除股票
+        function removeTicker(ticker) {
+            if (confirm(`確定要移除 ${ticker} 嗎？`)) {
+                removedTickers.add(ticker);
+                // 觸發重新渲染
+                const currentData = Array.from(document.querySelectorAll('.stock-card')).map(card => {
+                    const ticker = card.querySelector('.stock-ticker').textContent;
+                    return ticker;
+                });
+                socket.emit('refresh');
+            }
+        }
 
         // 處理開始監控或新增股票
         async function handleStartOrAdd() {
@@ -483,12 +763,12 @@
             } else {
                 await startMonitoring();
             }
-        }        // 開始監��
+        }
+
+        // 開始監控
         async function startMonitoring() {
-            // 確保有 session_id
             if (!sessionId) {
                 alert('正在連接伺服器，請稍候...');
-                // 等待最多5秒獲取 session_id
                 for (let i = 0; i < 50; i++) {
                     await new Promise(resolve => setTimeout(resolve, 100));
                     if (sessionId) break;
@@ -512,7 +792,7 @@
                 .map(t => t.trim())
                 .filter(t => t.length > 0);
 
-            document.getElementById('status').textContent = '正在啟動監控...';
+            document.getElementById('status').innerHTML = '<span class="loading-spinner"></span> 正在啟動監控...';
             document.getElementById('startBtn').disabled = true;
 
             try {
@@ -534,10 +814,13 @@
                     document.getElementById('startBtn').textContent = '新增股票';
                     document.getElementById('startBtn').disabled = false;
                     document.getElementById('stopBtn').disabled = false;
-                    document.getElementById('status').textContent = `監控中 (${result.tickers_count} 支股票)`;
-
-                    // 清除輸入框
+                    document.getElementById('status').textContent = `監控中（${result.tickers_count} 支）`;
                     document.getElementById('tickerInput').value = '';
+
+                    // 手機版自動收起面板
+                    if (window.innerWidth < 768) {
+                        togglePanel();
+                    }
                 } else {
                     alert(result.message);
                     document.getElementById('startBtn').disabled = false;
@@ -548,9 +831,7 @@
             }
         }
 
-        // 停止監控
-
-        // 新增股票到現有監控
+        // 新增股票
         async function addTickers() {
             const tickerText = document.getElementById('tickerInput').value.trim();
 
@@ -563,7 +844,7 @@
                 .map(t => t.trim())
                 .filter(t => t.length > 0);
 
-            document.getElementById('status').textContent = '正在新增股票...';
+            document.getElementById('status').innerHTML = '<span class="loading-spinner"></span> 正在新增股票...';
             document.getElementById('startBtn').disabled = true;
 
             try {
@@ -579,9 +860,7 @@
                 const result = await response.json();
 
                 if (result.status === 'success' || result.status === 'info') {
-                    document.getElementById('status').textContent = `監控中 (共 ${result.total_count} 支股票)`;
-
-                    // 清除輸入框
+                    document.getElementById('status').textContent = `監控中（共 ${result.total_count} 支）`;
                     document.getElementById('tickerInput').value = '';
 
                     if (result.added_count === 0) {
@@ -595,7 +874,10 @@
             } finally {
                 document.getElementById('startBtn').disabled = false;
             }
-        }        async function stopMonitoring() {
+        }
+
+        // 停止監控
+        async function stopMonitoring() {
             try {
                 const response = await fetch('/api/stop', {
                     method: 'POST',
@@ -613,93 +895,8 @@
                     document.getElementById('status').textContent = result.message;
                 }
             } catch (error) {
-                alert('停止��敗: ' + error);
+                alert('停止失敗: ' + error);
             }
-        }
-
-        // 更新表格
-        function updateTable(data) {
-            const tbody = document.getElementById('dataTable');
-
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="no-data">目前沒有符合條件的股票</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = data.map(item => {
-                // 格式化量數據
-                const volClass30 = item.vol_diff_30sec == 0 ? 'zero-value' : (item.vol_diff_30sec >= 0 ? 'positive' : 'negative');
-                const volClass1 = item.vol_diff_1min == 0 ? 'zero-value' : (item.vol_diff_1min >= 0 ? 'positive' : 'negative');
-                const volClass2 = item.vol_diff_2min == 0 ? 'zero-value' : (item.vol_diff_2min >= 0 ? 'positive' : 'negative');
-
-                const vol30 = `<span class="${volClass30}">${item.vol_diff_30sec >= 0 ? '+' : ''}${item.vol_diff_30sec}%</span>`;
-                const vol1 = `<span class="${volClass1}">${item.vol_diff_1min >= 0 ? '+' : ''}${item.vol_diff_1min}%</span>`;
-                const vol2 = `<span class="${volClass2}">${item.vol_diff_2min >= 0 ? '+' : ''}${item.vol_diff_2min}%</span>`;
-
-                // 格式化價數據
-                const priceClass30 = item.price_diff_30sec == 0 ? 'zero-value' : (item.price_diff_30sec >= 0 ? 'positive' : 'negative');
-                const priceClass1 = item.price_diff_1min == 0 ? 'zero-value' : (item.price_diff_1min >= 0 ? 'positive' : 'negative');
-                const priceClass2 = item.price_diff_2min == 0 ? 'zero-value' : (item.price_diff_2min >= 0 ? 'positive' : 'negative');
-
-                const price30 = `<span class="${priceClass30}">${item.price_diff_30sec >= 0 ? '+' : ''}${item.price_diff_30sec}%</span>`;
-                const price1 = `<span class="${priceClass1}">${item.price_diff_1min >= 0 ? '+' : ''}${item.price_diff_1min}%</span>`;
-                const price2 = `<span class="${priceClass2}">${item.price_diff_2min >= 0 ? '+' : ''}${item.price_diff_2min}%</span>`;
-
-                // 格式化均價偏離
-                const avgDevClass = item.avg_price_deviation == 0 ? 'zero-value' : (item.avg_price_deviation >= 0 ? 'positive' : 'negative');
-                const avgDev = `<span class="${avgDevClass}">${item.avg_price_deviation >= 0 ? '+' : ''}${item.avg_price_deviation}%</span>`;
-
-                // 判斷是否符合強勢股條件：價量動能三個時間區間皆為正，且漲幅在-10%到+5%之間
-                const isMomentumAlert = (
-                    item.vol_diff_30sec > 0 && item.vol_diff_1min > 0 && item.vol_diff_2min > 0 &&
-                    item.price_diff_30sec > 0 && item.price_diff_1min > 0 && item.price_diff_2min > 0 &&
-                    item.pct_change >= -10 && item.pct_change <= 5
-                );
-
-                const rowClass = isMomentumAlert ? 'new-row momentum-alert' : 'new-row';
-
-                return `
-                    <tr class="${rowClass}">
-                        <td><button class="btn-remove" onclick="removeTicker('${item.ticker}')">X</button></td>
-                        <td class="ticker">${item.ticker}</td>
-                        <td>${item.name}</td>
-                        <td>${item.price}</td>
-                        <td class="${item.pct_change >= 0 ? 'positive' : 'negative'}">
-                            ${item.pct_change >= 0 ? '+' : ''}${item.pct_change}%
-                        </td>
-                        <td class="vol-ratio">${item.vol_ratio}%</td>
-                        <td>${avgDev}</td>
-                        <td>${vol30}<span class="zero-value"> / </span>${vol1}<span class="zero-value"> / </span>${vol2}</td>
-                        <td>${price30}<span class="zero-value"> / </span>${price1}<span class="zero-value"> / </span>${price2}</td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // 移除股票代碼
-        let removedTickers = new Set();
-
-        function removeTicker(ticker) {
-            if (confirm(`確定要移除 ${ticker} 嗎？`)) {
-                removedTickers.add(ticker);
-                // 立即從顯示中移除
-                const tbody = document.getElementById('dataTable');
-                const rows = tbody.querySelectorAll('tr');
-                rows.forEach(row => {
-                    const tickerCell = row.querySelector('.ticker');
-                    if (tickerCell && tickerCell.textContent === ticker) {
-                        row.remove();
-                    }
-                });
-            }
-        }
-
-        // 修改 updateTable 函數，過濾掉已移除的股票
-        const originalUpdateTable = updateTable;
-        updateTable = function(data) {
-            // 過濾掉已移除的股票
-            const filteredData = data.filter(item => !removedTickers.has(item.ticker));
-            originalUpdateTable(filteredData);
         }
     </script>
 </body>
