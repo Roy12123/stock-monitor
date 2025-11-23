@@ -357,6 +357,17 @@
             border-top: 1px solid var(--border-color);
         }
 
+        .momentum-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .momentum-group {
+            display: flex;
+            flex-direction: column;
+        }
+
         .momentum-label {
             font-size: 8px;
             color: var(--text-muted);
@@ -852,20 +863,23 @@
                         </div>
 
                         <div class="momentum-section">
-                            <div class="momentum-label">📊 量動能（30秒/1分/2分）</div>
-                            <div class="momentum-bars">
-                                ${createMomentumBar(item.vol_diff_30sec)}
-                                ${createMomentumBar(item.vol_diff_1min)}
-                                ${createMomentumBar(item.vol_diff_2min)}
-                            </div>
-                        </div>
-
-                        <div class="momentum-section">
-                            <div class="momentum-label">💰 價動能（30秒/1分/2分）</div>
-                            <div class="momentum-bars">
-                                ${createMomentumBar(item.price_diff_30sec)}
-                                ${createMomentumBar(item.price_diff_1min)}
-                                ${createMomentumBar(item.price_diff_2min)}
+                            <div class="momentum-row">
+                                <div class="momentum-group">
+                                    <div class="momentum-label">📊 量</div>
+                                    <div class="momentum-bars">
+                                        ${createMomentumBar(item.vol_diff_30sec)}
+                                        ${createMomentumBar(item.vol_diff_1min)}
+                                        ${createMomentumBar(item.vol_diff_2min)}
+                                    </div>
+                                </div>
+                                <div class="momentum-group">
+                                    <div class="momentum-label">💰 價</div>
+                                    <div class="momentum-bars">
+                                        ${createMomentumBar(item.price_diff_30sec)}
+                                        ${createMomentumBar(item.price_diff_1min)}
+                                        ${createMomentumBar(item.price_diff_2min)}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
