@@ -332,17 +332,21 @@
 
         .metric-box {
             background: rgba(255,255,255,0.03);
-            padding: 5px;
+            padding: 5px 8px;
             border-radius: 5px;
             border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
         }
 
         .metric-label {
             font-size: 8px;
             color: var(--text-muted);
-            margin-bottom: 2px;
             text-transform: uppercase;
             letter-spacing: 0.3px;
+            white-space: nowrap;
         }
 
         .metric-value {
@@ -524,6 +528,10 @@
                 padding: 3px 6px;
             }
 
+            .metric-box {
+                padding: 6px 10px;
+            }
+
             .metric-label {
                 font-size: 10px;
             }
@@ -618,7 +626,7 @@
             }
 
             .metric-box {
-                padding: 8px;
+                padding: 7px 12px;
             }
 
             .momentum-label {
@@ -851,14 +859,14 @@
 
                         <div class="metrics-row">
                             <div class="metric-box">
-                                <div class="metric-label">量/5MA</div>
-                                <div class="metric-value">${item.vol_ratio}%</div>
+                                <span class="metric-label">量/5MA</span>
+                                <span class="metric-value">${item.vol_ratio}%</span>
                             </div>
                             <div class="metric-box">
-                                <div class="metric-label">均價偏離</div>
-                                <div class="metric-value ${item.avg_price_deviation >= 0 ? 'positive' : 'negative'}" style="color: ${item.avg_price_deviation >= 0 ? 'var(--primary-red)' : 'var(--primary-green)'}">
+                                <span class="metric-label">均價偏離</span>
+                                <span class="metric-value ${item.avg_price_deviation >= 0 ? 'positive' : 'negative'}" style="color: ${item.avg_price_deviation >= 0 ? 'var(--primary-red)' : 'var(--primary-green)'}">
                                     ${item.avg_price_deviation >= 0 ? '+' : ''}${item.avg_price_deviation}%
-                                </div>
+                                </span>
                             </div>
                         </div>
 
